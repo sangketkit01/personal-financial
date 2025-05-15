@@ -1,12 +1,15 @@
 package api
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	db "github.com/sangketkit01/personal-financial/db/sqlc"
 	"github.com/sangketkit01/personal-financial/token"
 )
 
@@ -16,7 +19,7 @@ const (
 	authorizationPayloadKey = "authorization_payload"
 )
 
-func authMiddleware(tokenMaker token.Maker) gin.HandlerFunc{
+func (server *Server) authMiddleware(tokenMaker token.Maker) gin.HandlerFunc{
 	return func(ctx *gin.Context) {
 		authorizationHeader := ctx.GetHeader(authorizationHeaderKey)
 
@@ -44,7 +47,52 @@ func authMiddleware(tokenMaker token.Maker) gin.HandlerFunc{
 			return
 		}
 
-		ctx.Set(authorizationPayloadKey, payload)
+		user, err := server.store.GetUser(ctx, payload.Username)
+		if err != nil{
+			if err == sql.ErrNoRows{
+				ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error" : "user not found, then why are you here ?"})
+				return
+			}
+
+			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error" : "cannot get user data."})
+			return
+		}
+
+		ctx.Set("user", user)
+		ctx.Next()
+	}
+}
+
+func (server *Server) FinancialMiddleware() gin.HandlerFunc{
+	return func(ctx *gin.Context) {
+		user := ctx.MustGet("user").(db.User)
+
+		financialId, err := strconv.Atoi(ctx.Param("id"))
+		if err != nil || financialId <= 0{
+			ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error" : "invalid financial id."})
+			return
+		}
+
+		owner, err := server.store.GetFinancialOwner(ctx, int64(financialId))
+		if err != nil{
+			if err == sql.ErrNoRows{
+				ctx.AbortWithStatusJSON(http.StatusNotFound, gin.H{"error" : "no financial found."})
+				return
+			}
+
+			ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error" : err.Error()})
+			return
+		}
+
+		if user.Username != owner{
+			ctx.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+				"status":  http.StatusForbidden,
+				"message": "you are not authorized to access this financial record",
+			})
+
+			return			
+		}
+
 		ctx.Next()
 	}
 }
