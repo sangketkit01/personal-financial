@@ -43,9 +43,9 @@ SELECT
     ELSE 'equal'
   END AS status
 FROM financials f
-WHERE f.user_id = @user_id
-  AND EXTRACT(MONTH FROM f.created_at) = @month
-  AND EXTRACT(YEAR FROM f.created_at) = @year;
+WHERE f.user_id = @user_id::text
+  AND EXTRACT(MONTH FROM f.created_at) = @month::int
+  AND EXTRACT(YEAR FROM f.created_at) = @year::int;
 
 -- name: SummaryFinancialByYear :one
 SELECT 
@@ -57,8 +57,8 @@ SELECT
     ELSE 'equal'
   END AS status
 FROM financials f
-WHERE f.user_id = @user_id
-  AND EXTRACT(YEAR FROM f.created_at) = @year;
+WHERE f.user_id = @user_id::text
+  AND EXTRACT(YEAR FROM f.created_at) = @year::int;
 
 
 -- name: SummaryByTypeMonth :many
@@ -73,9 +73,9 @@ SELECT
   END AS status
 FROM financials f
 JOIN financial_types ft ON ft.id = f.type_id
-WHERE f.user_id = @user_id
-  AND EXTRACT(MONTH FROM f.created_at) = @month
-  AND EXTRACT(YEAR FROM f.created_at) = @year
+WHERE f.user_id = @user_id::text
+  AND EXTRACT(MONTH FROM f.created_at) = @month::int
+  AND EXTRACT(YEAR FROM f.created_at) = @year::int
 GROUP BY ft.type
 ORDER BY ft.type;
 
@@ -91,8 +91,8 @@ SELECT
   END AS status
 FROM financials f
 JOIN financial_types ft ON ft.id = f.type_id
-WHERE f.user_id = @user_id
-  AND EXTRACT(YEAR FROM f.created_at) = @year
+WHERE f.user_id = @user_id::text
+  AND EXTRACT(YEAR FROM f.created_at) = @year::int
 GROUP BY ft.type
 ORDER BY ft.type;
 
@@ -107,6 +107,6 @@ SELECT
         ELSE 'equal'
     END AS status
 FROM financials f
-WHERE f.user_id = @user_id
+WHERE f.user_id = @user_id::text
 GROUP BY year
 ORDER BY year;

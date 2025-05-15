@@ -159,17 +159,17 @@ SELECT
   END AS status
 FROM financials f
 JOIN financial_types ft ON ft.id = f.type_id
-WHERE f.user_id = $1
-  AND EXTRACT(MONTH FROM f.created_at) = $2
-  AND EXTRACT(YEAR FROM f.created_at) = $3
+WHERE f.user_id = $1::text
+  AND EXTRACT(MONTH FROM f.created_at) = $2::int
+  AND EXTRACT(YEAR FROM f.created_at) = $3::int
 GROUP BY ft.type
 ORDER BY ft.type
 `
 
 type SummaryByTypeMonthParams struct {
-	UserID string    `json:"user_id"`
-	Month  time.Time `json:"month"`
-	Year   time.Time `json:"year"`
+	UserID string `json:"user_id"`
+	Month  int32  `json:"month"`
+	Year   int32  `json:"year"`
 }
 
 type SummaryByTypeMonthRow struct {
@@ -216,15 +216,15 @@ SELECT
   END AS status
 FROM financials f
 JOIN financial_types ft ON ft.id = f.type_id
-WHERE f.user_id = $1
-  AND EXTRACT(YEAR FROM f.created_at) = $2
+WHERE f.user_id = $1::text
+  AND EXTRACT(YEAR FROM f.created_at) = $2::int
 GROUP BY ft.type
 ORDER BY ft.type
 `
 
 type SummaryByTypeYearParams struct {
-	UserID string    `json:"user_id"`
-	Year   time.Time `json:"year"`
+	UserID string `json:"user_id"`
+	Year   int32  `json:"year"`
 }
 
 type SummaryByTypeYearRow struct {
@@ -269,15 +269,15 @@ SELECT
     ELSE 'equal'
   END AS status
 FROM financials f
-WHERE f.user_id = $1
-  AND EXTRACT(MONTH FROM f.created_at) = $2
-  AND EXTRACT(YEAR FROM f.created_at) = $3
+WHERE f.user_id = $1::text
+  AND EXTRACT(MONTH FROM f.created_at) = $2::int
+  AND EXTRACT(YEAR FROM f.created_at) = $3::int
 `
 
 type SummaryFinancialByMonthParams struct {
-	UserID string    `json:"user_id"`
-	Month  time.Time `json:"month"`
-	Year   time.Time `json:"year"`
+	UserID string `json:"user_id"`
+	Month  int32  `json:"month"`
+	Year   int32  `json:"year"`
 }
 
 type SummaryFinancialByMonthRow struct {
@@ -303,13 +303,13 @@ SELECT
     ELSE 'equal'
   END AS status
 FROM financials f
-WHERE f.user_id = $1
-  AND EXTRACT(YEAR FROM f.created_at) = $2
+WHERE f.user_id = $1::text
+  AND EXTRACT(YEAR FROM f.created_at) = $2::int
 `
 
 type SummaryFinancialByYearParams struct {
-	UserID string    `json:"user_id"`
-	Year   time.Time `json:"year"`
+	UserID string `json:"user_id"`
+	Year   int32  `json:"year"`
 }
 
 type SummaryFinancialByYearRow struct {
@@ -336,7 +336,7 @@ SELECT
         ELSE 'equal'
     END AS status
 FROM financials f
-WHERE f.user_id = $1
+WHERE f.user_id = $1::text
 GROUP BY year
 ORDER BY year
 `

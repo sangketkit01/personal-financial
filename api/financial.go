@@ -1,13 +1,15 @@
 package api
 
 import (
-	"database/sql"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5"
 	db "github.com/sangketkit01/personal-financial/db/sqlc"
+	"github.com/sangketkit01/personal-financial/util"
 )
 
 func (server *Server) GetFinancialById(ctx *gin.Context) {
@@ -21,7 +23,7 @@ func (server *Server) GetFinancialById(ctx *gin.Context) {
 
 	financialData, err := server.store.GetFinancialById(ctx, int64(financialId))
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, newErrorResponse("no financial found."))
 			return
 		}
@@ -38,12 +40,10 @@ func (server *Server) MyFinancial(ctx *gin.Context) {
 
 	myFinancial, err := server.store.MyFinancial(ctx, user.Username)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			ctx.JSON(http.StatusNotFound, newErrorResponse("no financial found."))
-			return
-		}
-
 		ctx.JSON(http.StatusInternalServerError, newErrorResponse("cannot get financial data."))
+		return
+	}else if len(myFinancial) == 0{
+		ctx.JSON(http.StatusNotFound, newErrorResponse("no financial found."))
 		return
 	}
 
@@ -69,12 +69,13 @@ func (server *Server) AddNewFinancial(ctx *gin.Context) {
 		return
 	}
 
-	financialTypeId, err := server.store.GetFinancialByName(ctx, req.Type)
+	financialTypeId, err := server.store.GetFinancialByName(ctx, util.CapitalizeWord(req.Type))
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			// other financial type
 			financialTypeId.ID = 10
 		} else {
+			fmt.Printf("error: %v\n", err)
 			ctx.JSON(http.StatusInternalServerError, newErrorResponse("cannot get financial type."))
 			return
 		}
@@ -129,9 +130,9 @@ func (server *Server) UpdateFinancial(ctx *gin.Context) {
 		return
 	}
 
-	financialTypeId, err := server.store.GetFinancialByName(ctx, req.Type)
+	financialTypeId, err := server.store.GetFinancialByName(ctx, util.CapitalizeWord(req.Type))
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			// other financial type
 			financialTypeId.ID = 10
 		} else {
@@ -185,21 +186,18 @@ func (server *Server) DeleteFinancial(ctx *gin.Context) {
 	})
 }
 
-
-func (server *Server) SummaryFinancialCurrentMonth(ctx *gin.Context) {
+func (server *Server) SummaryCurrentMonth(ctx *gin.Context) {
 	user := ctx.MustGet("user").(db.User)
-
-	timeNow := time.Now()
 
 	arg := db.SummaryFinancialByMonthParams{
 		UserID: user.Username,
-		Month:  time.Date(timeNow.Year(), timeNow.Month(), 1, 0, 0, 0, 0, time.Now().Location()),
-		Year:   time.Date(timeNow.Year(), 1, 1, 0, 0, 0, 0, timeNow.Location()),
+		Month:  int32(time.Now().Month()),
+		Year:   int32(time.Now().Year()),
 	}
 
 	summary, err := server.store.SummaryFinancialByMonth(ctx, arg)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, newErrorResponse("you have no financial yet."))
 			return
 		}
@@ -211,19 +209,17 @@ func (server *Server) SummaryFinancialCurrentMonth(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, summary)
 }
 
-func (server *Server) SummaryFinancialCurrentYear(ctx *gin.Context) {
+func (server *Server) SummaryCurrentYear(ctx *gin.Context) {
 	user := ctx.MustGet("user").(db.User)
-
-	timeNow := time.Now()
 
 	arg := db.SummaryFinancialByYearParams{
 		UserID: user.Username,
-		Year:   time.Date(timeNow.Year(), 1, 1, 0, 0, 0, 0, timeNow.Location()),
+		Year:   int32(time.Now().Year()),
 	}
 
 	summary, err := server.store.SummaryFinancialByYear(ctx, arg)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if err == pgx.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, newErrorResponse("you have no financial yet."))
 			return
 		}
@@ -244,28 +240,28 @@ type YearRequest struct {
 	Year int `json:"year" binding:"required,min=2020"`
 }
 
-func (server *Server) SummaryFinancialByMonthYear(ctx *gin.Context) {
+func (server *Server) SummaryByMonthYear(ctx *gin.Context) {
 	user := ctx.MustGet("user").(db.User)
 
 	var req YearMonthRequest
-	if err := ctx.ShouldBindJSON(&req) ; err != nil{
+	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, newErrorResponse("invalid request body."))
 		return
 	}
 
-	if req.Year > time.Now().Year(){
+	if req.Year > time.Now().Year() {
 		ctx.JSON(http.StatusBadRequest, newErrorResponse("invalid year."))
 		return
 	}
 
 	summary, err := server.store.SummaryFinancialByMonth(ctx, db.SummaryFinancialByMonthParams{
 		UserID: user.Username,
-		Month: time.Date(req.Year, time.Month(req.Month), 1, 0, 0, 0, 0, time.Now().Location()),
-		Year:time.Date(req.Year, 1, 1, 0, 0, 0, 0, time.Now().Location()) ,
+		Month:  int32(req.Month),
+		Year:   int32(req.Year),
 	})
 
-	if err != nil{
-		if err == sql.ErrNoRows {
+	if err != nil {
+		if err == pgx.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, newErrorResponse("you have no financial yet."))
 			return
 		}
@@ -277,27 +273,27 @@ func (server *Server) SummaryFinancialByMonthYear(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, summary)
 }
 
-func (server *Server) SummaryFinancialByYear(ctx *gin.Context) {
+func (server *Server) SummaryByYear(ctx *gin.Context) {
 	user := ctx.MustGet("user").(db.User)
 
 	var req YearRequest
-	if err := ctx.ShouldBindJSON(&req) ; err != nil{
+	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, newErrorResponse("invalid request body."))
 		return
 	}
 
-	if req.Year > time.Now().Year(){
+	if req.Year > time.Now().Year() {
 		ctx.JSON(http.StatusBadRequest, newErrorResponse("invalid year."))
 		return
 	}
 
 	summary, err := server.store.SummaryFinancialByYear(ctx, db.SummaryFinancialByYearParams{
 		UserID: user.Username,
-		Year:time.Date(req.Year, 1, 1, 0, 0, 0, 0, time.Now().Location()) ,
+		Year:   int32(req.Year),
 	})
 
-	if err != nil{
-		if err == sql.ErrNoRows {
+	if err != nil {
+		if err == pgx.ErrNoRows {
 			ctx.JSON(http.StatusNotFound, newErrorResponse("you have no financial yet."))
 			return
 		}
@@ -309,3 +305,76 @@ func (server *Server) SummaryFinancialByYear(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, summary)
 }
 
+func (server *Server) SummaryEachYear(ctx *gin.Context) {
+	user := ctx.MustGet("user").(db.User)
+
+	summary, err := server.store.SummaryFinancialEachYear(ctx, user.Username)
+
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, newErrorResponse(err.Error()))
+		return
+	}else if len(summary) == 0{
+		ctx.JSON(http.StatusNotFound, newErrorResponse("no financial found."))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, summary)
+}
+
+func (server *Server) SummaryTypeByMonthYear(ctx *gin.Context) {
+	user := ctx.MustGet("user").(db.User)
+
+	var req YearMonthRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		req.Month = int(time.Now().Month())
+		req.Year = time.Now().Year()
+	}
+
+	if req.Year > time.Now().Year() {
+		ctx.JSON(http.StatusBadRequest, newErrorResponse("invalid year."))
+	}
+
+	summary, err := server.store.SummaryByTypeMonth(ctx, db.SummaryByTypeMonthParams{
+		UserID: user.Username,
+		Month:  int32(req.Month),
+		Year:   int32(req.Year),
+	})
+
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, newErrorResponse(err.Error()))
+		return
+	}else if len(summary) == 0{
+		ctx.JSON(http.StatusNotFound, newErrorResponse("you have no financial yet."))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, summary)
+}
+
+func (server *Server) SummaryTypeByYear(ctx *gin.Context) {
+	user := ctx.MustGet("user").(db.User)
+
+	var req YearRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		req.Year = time.Now().Year()
+	}
+
+	if req.Year > time.Now().Year() {
+		ctx.JSON(http.StatusBadRequest, newErrorResponse("invalid year."))
+	}
+
+	summary, err := server.store.SummaryByTypeYear(ctx, db.SummaryByTypeYearParams{
+		UserID: user.Username,
+		Year:   int32(req.Year),
+	})
+
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, newErrorResponse(err.Error()))
+		return
+	}else if len(summary) == 0{
+		ctx.JSON(http.StatusNotFound, newErrorResponse("you have no financial yet."))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, summary)
+}

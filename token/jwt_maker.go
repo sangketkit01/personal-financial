@@ -1,7 +1,6 @@
 package token
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -16,15 +15,15 @@ type JWTMaker struct {
 
 func NewJWTMaker(secretKey string) (Maker, error) {
 	if len(secretKey) < minSecretKeySize {
-	 	return nil, fmt.Errorf("invalid key size: %d, must be at least %d characters",len(secretKey), minSecretKeySize)
+		return nil, fmt.Errorf("invalid key size: %d, must be at least %d characters", len(secretKey), minSecretKeySize)
 	}
 
 	return &JWTMaker{secretKey: secretKey}, nil
 }
 
-func (maker *JWTMaker) CreateToken(username string, duration time.Duration) (string, error){
+func (maker *JWTMaker) CreateToken(username string, duration time.Duration) (string, error) {
 	payload, err := NewPayload(username, duration)
-	if err != nil{
+	if err != nil {
 		return "", err
 	}
 
@@ -33,27 +32,27 @@ func (maker *JWTMaker) CreateToken(username string, duration time.Duration) (str
 	return jwtToken.SignedString([]byte(maker.secretKey))
 }
 
-func (maker *JWTMaker) VerifyToken(token string) (*Payload, error){
-	keyFunc :=  func(token *jwt.Token) (interface{}, error){
+func (maker *JWTMaker) VerifyToken(token string) (*Payload, error) {
+	keyFunc := func(token *jwt.Token) (interface{}, error) {
 		_, ok := token.Method.(*jwt.SigningMethodHMAC)
-		if !ok{
+		if !ok {
 			return nil, fmt.Errorf("invalid token")
 		}
 
 		return []byte(maker.secretKey), nil
 	}
 	jwtToken, err := jwt.ParseWithClaims(token, &Payload{}, keyFunc)
-	if err != nil{
+	if err != nil {
 		verr, ok := err.(*jwt.ValidationError)
-		if ok && errors.Is(verr.Inner, errors.New("token has expired")){
-			return nil, errors.New("token has expired")
+		if ok && verr.Errors == jwt.ValidationErrorExpired {
+			return nil, fmt.Errorf("token has expired")
 		}
 
-		return nil , fmt.Errorf("invalid token")
+		return nil, fmt.Errorf("invalid token")
 	}
 
 	payload, ok := jwtToken.Claims.(*Payload)
-	if !ok{
+	if !ok {
 		return nil, fmt.Errorf("invalid token")
 	}
 

@@ -40,9 +40,21 @@ func (server *Server) setupRoute(){
 
 	financialRoute := authRoute.Group("/financial")
 	financialRoute.Use(server.FinancialMiddleware())
-	financialRoute.GET("/:id", server.GetFinancialById)
-	financialRoute.PUT("/:id", server.UpdateFinancial)
-	financialRoute.DELETE("/:id", server.DeleteFinancial)
+	financialRoute.GET("/get/:id", server.GetFinancialById)
+	financialRoute.PUT("/update/:id", server.UpdateFinancial)
+	financialRoute.DELETE("/delete/:id", server.DeleteFinancial)
+
+	summaryRoute := authRoute.Group("/summary")
+
+	summaryRoute.GET("/current-month", server.SummaryCurrentMonth)
+	summaryRoute.GET("/current-year", server.SummaryCurrentYear)
+	summaryRoute.GET("/each-year", server.SummaryEachYear)
+	
+	summaryRoute.GET("/month", server.SummaryByMonthYear)
+	summaryRoute.GET("/summary/month/year", server.SummaryByYear)
+
+	summaryRoute.GET("/type/month-year", server.SummaryTypeByMonthYear)
+	summaryRoute.GET("/type/year", server.SummaryTypeByYear)
 
 	server.router = router
 }
