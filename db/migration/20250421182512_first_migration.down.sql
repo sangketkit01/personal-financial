@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS financials;
+DROP TABLE IF EXISTS financial_types;
