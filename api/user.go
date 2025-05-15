@@ -31,7 +31,7 @@ type CreateUserResponse struct{
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-func (server *Server) createUserAPI(ctx *gin.Context){
+func (server *Server) createUser(ctx *gin.Context){
 	var req CreateUserRequest
 	err := ctx.ShouldBindJSON(&req)
 	if err != nil{
@@ -94,7 +94,7 @@ type LoginUserRespose struct{
 	ExpiredAt time.Time `json:"expired_at"`
 }
 
-func (server *Server) LoginUserAPI(ctx *gin.Context){
+func (server *Server) LoginUser(ctx *gin.Context){
 	var req LoginUserRequest
 	err := ctx.ShouldBindJSON(&req)
 	if err != nil{

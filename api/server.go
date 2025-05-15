@@ -30,8 +30,8 @@ func NewServer(config util.Config, store db.Store, tokenMaker token.Maker) (*Ser
 func (server *Server) setupRoute(){
 	router := gin.Default()
 
-	router.POST("/create-user",server.createUserAPI)
-	router.POST("/login-user",server.LoginUserAPI)
+	router.POST("/create-user",server.createUser)
+	router.POST("/login-user",server.LoginUser)
 
 	// authRoute := router.Group("/").Use(authMiddleware(server.tokenMaker))
 	

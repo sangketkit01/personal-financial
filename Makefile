@@ -6,14 +6,17 @@ createdb:
 dropdb:
 	docker exec -it postgres dropdb --username=root --owner=root personal_financial
 
+new_migration:
+	migrate create -ext sql -dir db/migration -seq $(name)
+
 migrateup: 
 	migrate -path db/migration -database "$(DB_URL)" -verbose up
 
 migratedown:
-	migrate -path db/migration -databate "$(DB_URL)" -verbose down
+	migrate -path db/migration -database "$(DB_URL)" -verbose down
 
 sqlc:
-	docker run --rm -v "%cd%:/src" -w /src kjconroy/sqlc generate
+	sqlc generate
 
 test:
 	go test -v -cover -short ./...
@@ -23,4 +26,6 @@ server:
 
 mock:
 	mockgen -package mockdb -destination db/mock/store.go github.com/sangketkit01/simple-bank/db/sqlc Store
-.PHONY:
+
+
+.PHONY: createdb dropdb new_migration migrateup migratedown sqlc test server mock
