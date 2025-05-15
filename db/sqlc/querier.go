@@ -18,6 +18,11 @@ type Querier interface {
 	InsertNewFinancial(ctx context.Context, arg InsertNewFinancialParams) (Financial, error)
 	LoginUser(ctx context.Context, username string) (LoginUserRow, error)
 	MyFinancial(ctx context.Context, userID string) ([]MyFinancialRow, error)
+	SummaryByTypeMonth(ctx context.Context, arg SummaryByTypeMonthParams) ([]SummaryByTypeMonthRow, error)
+	SummaryByTypeYear(ctx context.Context, arg SummaryByTypeYearParams) ([]SummaryByTypeYearRow, error)
+	SummaryFinancialByMonth(ctx context.Context, arg SummaryFinancialByMonthParams) (SummaryFinancialByMonthRow, error)
+	SummaryFinancialByYear(ctx context.Context, arg SummaryFinancialByYearParams) (SummaryFinancialByYearRow, error)
+	SummaryFinancialEachYear(ctx context.Context, userID string) ([]SummaryFinancialEachYearRow, error)
 	UpdateFinancial(ctx context.Context, arg UpdateFinancialParams) (Financial, error)
 }
 

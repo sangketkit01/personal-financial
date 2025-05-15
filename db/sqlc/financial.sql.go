@@ -7,6 +7,7 @@ package db
 
 import (
 	"context"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -39,11 +40,11 @@ WHERE f.id = $1
 `
 
 type GetFinancialByIdRow struct {
-	ID        int64              `json:"id"`
-	Amount    int64              `json:"amount"`
-	Direction string             `json:"direction"`
-	Type      pgtype.Text        `json:"type"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	ID        int64       `json:"id"`
+	Amount    int64       `json:"amount"`
+	Direction string      `json:"direction"`
+	Type      pgtype.Text `json:"type"`
+	CreatedAt time.Time   `json:"created_at"`
 }
 
 func (q *Queries) GetFinancialById(ctx context.Context, id int64) (GetFinancialByIdRow, error) {
@@ -113,11 +114,11 @@ WHERE f.user_id = $1
 `
 
 type MyFinancialRow struct {
-	ID        int64              `json:"id"`
-	Amount    int64              `json:"amount"`
-	Direction string             `json:"direction"`
-	Type      pgtype.Text        `json:"type"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	ID        int64       `json:"id"`
+	Amount    int64       `json:"amount"`
+	Direction string      `json:"direction"`
+	Type      pgtype.Text `json:"type"`
+	CreatedAt time.Time   `json:"created_at"`
 }
 
 func (q *Queries) MyFinancial(ctx context.Context, userID string) ([]MyFinancialRow, error) {
@@ -135,6 +136,232 @@ func (q *Queries) MyFinancial(ctx context.Context, userID string) ([]MyFinancial
 			&i.Direction,
 			&i.Type,
 			&i.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const summaryByTypeMonth = `-- name: SummaryByTypeMonth :many
+SELECT 
+  ft.type,
+  SUM(CASE WHEN f.direction = 'in' THEN f.amount ELSE 0 END) AS total_income,
+  SUM(CASE WHEN f.direction = 'out' THEN f.amount ELSE 0 END) AS total_expense,
+  CASE
+    WHEN SUM(CASE WHEN f.direction = 'in' THEN f.amount ELSE 0 END) > SUM(CASE WHEN f.direction = 'out' THEN f.amount ELSE 0 END) THEN 'in'
+    WHEN SUM(CASE WHEN f.direction = 'in' THEN f.amount ELSE 0 END) < SUM(CASE WHEN f.direction = 'out' THEN f.amount ELSE 0 END) THEN 'out'
+    ELSE 'equal'
+  END AS status
+FROM financials f
+JOIN financial_types ft ON ft.id = f.type_id
+WHERE f.user_id = $1
+  AND EXTRACT(MONTH FROM f.created_at) = $2
+  AND EXTRACT(YEAR FROM f.created_at) = $3
+GROUP BY ft.type
+ORDER BY ft.type
+`
+
+type SummaryByTypeMonthParams struct {
+	UserID string    `json:"user_id"`
+	Month  time.Time `json:"month"`
+	Year   time.Time `json:"year"`
+}
+
+type SummaryByTypeMonthRow struct {
+	Type         string `json:"type"`
+	TotalIncome  int64  `json:"total_income"`
+	TotalExpense int64  `json:"total_expense"`
+	Status       string `json:"status"`
+}
+
+func (q *Queries) SummaryByTypeMonth(ctx context.Context, arg SummaryByTypeMonthParams) ([]SummaryByTypeMonthRow, error) {
+	rows, err := q.db.Query(ctx, summaryByTypeMonth, arg.UserID, arg.Month, arg.Year)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []SummaryByTypeMonthRow{}
+	for rows.Next() {
+		var i SummaryByTypeMonthRow
+		if err := rows.Scan(
+			&i.Type,
+			&i.TotalIncome,
+			&i.TotalExpense,
+			&i.Status,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const summaryByTypeYear = `-- name: SummaryByTypeYear :many
+SELECT 
+  ft.type,
+  SUM(CASE WHEN f.direction = 'in' THEN f.amount ELSE 0 END) AS total_income,
+  SUM(CASE WHEN f.direction = 'out' THEN f.amount ELSE 0 END) AS total_expense,
+  CASE
+    WHEN SUM(CASE WHEN f.direction = 'in' THEN f.amount ELSE 0 END) > SUM(CASE WHEN f.direction = 'out' THEN f.amount ELSE 0 END) THEN 'in'
+    WHEN SUM(CASE WHEN f.direction = 'in' THEN f.amount ELSE 0 END) < SUM(CASE WHEN f.direction = 'out' THEN f.amount ELSE 0 END) THEN 'out'
+    ELSE 'equal'
+  END AS status
+FROM financials f
+JOIN financial_types ft ON ft.id = f.type_id
+WHERE f.user_id = $1
+  AND EXTRACT(YEAR FROM f.created_at) = $2
+GROUP BY ft.type
+ORDER BY ft.type
+`
+
+type SummaryByTypeYearParams struct {
+	UserID string    `json:"user_id"`
+	Year   time.Time `json:"year"`
+}
+
+type SummaryByTypeYearRow struct {
+	Type         string `json:"type"`
+	TotalIncome  int64  `json:"total_income"`
+	TotalExpense int64  `json:"total_expense"`
+	Status       string `json:"status"`
+}
+
+func (q *Queries) SummaryByTypeYear(ctx context.Context, arg SummaryByTypeYearParams) ([]SummaryByTypeYearRow, error) {
+	rows, err := q.db.Query(ctx, summaryByTypeYear, arg.UserID, arg.Year)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []SummaryByTypeYearRow{}
+	for rows.Next() {
+		var i SummaryByTypeYearRow
+		if err := rows.Scan(
+			&i.Type,
+			&i.TotalIncome,
+			&i.TotalExpense,
+			&i.Status,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const summaryFinancialByMonth = `-- name: SummaryFinancialByMonth :one
+SELECT 
+  SUM(CASE WHEN f.direction = 'in' THEN f.amount ELSE 0 END) AS total_income,
+  SUM(CASE WHEN f.direction = 'out' THEN f.amount ELSE 0 END) AS total_expense,
+  CASE
+    WHEN SUM(CASE WHEN f.direction = 'in' THEN f.amount ELSE 0 END) > SUM(CASE WHEN f.direction = 'out' THEN f.amount ELSE 0 END) THEN 'in'
+    WHEN SUM(CASE WHEN f.direction = 'in' THEN f.amount ELSE 0 END) < SUM(CASE WHEN f.direction = 'out' THEN f.amount ELSE 0 END) THEN 'out'
+    ELSE 'equal'
+  END AS status
+FROM financials f
+WHERE f.user_id = $1
+  AND EXTRACT(MONTH FROM f.created_at) = $2
+  AND EXTRACT(YEAR FROM f.created_at) = $3
+`
+
+type SummaryFinancialByMonthParams struct {
+	UserID string    `json:"user_id"`
+	Month  time.Time `json:"month"`
+	Year   time.Time `json:"year"`
+}
+
+type SummaryFinancialByMonthRow struct {
+	TotalIncome  int64  `json:"total_income"`
+	TotalExpense int64  `json:"total_expense"`
+	Status       string `json:"status"`
+}
+
+func (q *Queries) SummaryFinancialByMonth(ctx context.Context, arg SummaryFinancialByMonthParams) (SummaryFinancialByMonthRow, error) {
+	row := q.db.QueryRow(ctx, summaryFinancialByMonth, arg.UserID, arg.Month, arg.Year)
+	var i SummaryFinancialByMonthRow
+	err := row.Scan(&i.TotalIncome, &i.TotalExpense, &i.Status)
+	return i, err
+}
+
+const summaryFinancialByYear = `-- name: SummaryFinancialByYear :one
+SELECT 
+  SUM(CASE WHEN f.direction = 'in' THEN f.amount ELSE 0 END) AS total_income,
+  SUM(CASE WHEN f.direction = 'out' THEN f.amount ELSE 0 END) AS total_expense,
+  CASE
+    WHEN SUM(CASE WHEN f.direction = 'in' THEN f.amount ELSE 0 END) > SUM(CASE WHEN f.direction = 'out' THEN f.amount ELSE 0 END) THEN 'in'
+    WHEN SUM(CASE WHEN f.direction = 'in' THEN f.amount ELSE 0 END) < SUM(CASE WHEN f.direction = 'out' THEN f.amount ELSE 0 END) THEN 'out'
+    ELSE 'equal'
+  END AS status
+FROM financials f
+WHERE f.user_id = $1
+  AND EXTRACT(YEAR FROM f.created_at) = $2
+`
+
+type SummaryFinancialByYearParams struct {
+	UserID string    `json:"user_id"`
+	Year   time.Time `json:"year"`
+}
+
+type SummaryFinancialByYearRow struct {
+	TotalIncome  int64  `json:"total_income"`
+	TotalExpense int64  `json:"total_expense"`
+	Status       string `json:"status"`
+}
+
+func (q *Queries) SummaryFinancialByYear(ctx context.Context, arg SummaryFinancialByYearParams) (SummaryFinancialByYearRow, error) {
+	row := q.db.QueryRow(ctx, summaryFinancialByYear, arg.UserID, arg.Year)
+	var i SummaryFinancialByYearRow
+	err := row.Scan(&i.TotalIncome, &i.TotalExpense, &i.Status)
+	return i, err
+}
+
+const summaryFinancialEachYear = `-- name: SummaryFinancialEachYear :many
+SELECT 
+    EXTRACT(YEAR FROM f.created_at)::INT AS year,
+    COALESCE(SUM(CASE WHEN f.direction = 'in' THEN f.amount END), 0) AS in_amount,
+    COALESCE(SUM(CASE WHEN f.direction = 'out' THEN f.amount END), 0) AS out_amount,
+    CASE
+        WHEN COALESCE(SUM(CASE WHEN f.direction = 'in' THEN f.amount END), 0) > COALESCE(SUM(CASE WHEN f.direction = 'out' THEN f.amount END), 0) THEN 'in'
+        WHEN COALESCE(SUM(CASE WHEN f.direction = 'in' THEN f.amount END), 0) < COALESCE(SUM(CASE WHEN f.direction = 'out' THEN f.amount END), 0) THEN 'out'
+        ELSE 'equal'
+    END AS status
+FROM financials f
+WHERE f.user_id = $1
+GROUP BY year
+ORDER BY year
+`
+
+type SummaryFinancialEachYearRow struct {
+	Year      int32       `json:"year"`
+	InAmount  interface{} `json:"in_amount"`
+	OutAmount interface{} `json:"out_amount"`
+	Status    string      `json:"status"`
+}
+
+func (q *Queries) SummaryFinancialEachYear(ctx context.Context, userID string) ([]SummaryFinancialEachYearRow, error) {
+	rows, err := q.db.Query(ctx, summaryFinancialEachYear, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []SummaryFinancialEachYearRow{}
+	for rows.Next() {
+		var i SummaryFinancialEachYearRow
+		if err := rows.Scan(
+			&i.Year,
+			&i.InAmount,
+			&i.OutAmount,
+			&i.Status,
 		); err != nil {
 			return nil, err
 		}

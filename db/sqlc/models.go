@@ -5,16 +5,16 @@
 package db
 
 import (
-	"github.com/jackc/pgx/v5/pgtype"
+	"time"
 )
 
 type Financial struct {
-	ID        int64              `json:"id"`
-	UserID    string             `json:"user_id"`
-	Amount    int64              `json:"amount"`
-	Direction string             `json:"direction"`
-	TypeID    int64              `json:"type_id"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	ID        int64     `json:"id"`
+	UserID    string    `json:"user_id"`
+	Amount    int64     `json:"amount"`
+	Direction string    `json:"direction"`
+	TypeID    int64     `json:"type_id"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type FinancialType struct {
@@ -23,11 +23,11 @@ type FinancialType struct {
 }
 
 type User struct {
-	Username  string             `json:"username"`
-	Name      string             `json:"name"`
-	Email     string             `json:"email"`
-	Phone     string             `json:"phone"`
-	Password  string             `json:"password"`
-	CreatedAt pgtype.Timestamptz `json:"created_at"`
-	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	Username  string    `json:"username"`
+	Name      string    `json:"name"`
+	Email     string    `json:"email"`
+	Phone     string    `json:"phone"`
+	Password  string    `json:"password"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }

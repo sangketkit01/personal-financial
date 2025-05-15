@@ -1,7 +1,6 @@
 package api
 
 import (
-	"errors"
 
 	"github.com/gin-gonic/gin"
 )
@@ -11,5 +10,5 @@ func errorResponse(err error) gin.H{
 }
 
 func newErrorResponse(message string) gin.H{
-	return gin.H{"error" : errors.New(message)}
+	return gin.H{"error" : message}
 }

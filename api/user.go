@@ -69,8 +69,8 @@ func (server *Server) createUser(ctx *gin.Context){
 		Name: user.Name,
 		Email: user.Email,
 		Phone: user.Phone,
-		CreatedAt: user.CreatedAt.Time,
-		UpdatedAt: user.UpdatedAt.Time,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
 	}
 
 	ctx.JSON(http.StatusOK, response)
@@ -141,8 +141,8 @@ func (server *Server) LoginUser(ctx *gin.Context){
 		Email: user.Email,
 		Name: user.Name,
 		Phone: user.Phone,
-		CreatedAt: user.CreatedAt.Time,
-		UpdatedAt: user.UpdatedAt.Time,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
 		TokenID: payload.ID.String(),
 		AccessToken: accessToken,
 		IssuedAt: payload.IssuedAt,
