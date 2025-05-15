@@ -33,8 +33,16 @@ func (server *Server) setupRoute(){
 	router.POST("/create-user",server.createUser)
 	router.POST("/login-user",server.LoginUser)
 
-	// authRoute := router.Group("/").Use(authMiddleware(server.tokenMaker))
-	
+	authRoute := router.Group("/")
+	authRoute.Use(server.authMiddleware(server.tokenMaker))
+	authRoute.POST("/new-financial", server.AddNewFinancial)
+	authRoute.GET("/my-financial", server.MyFinancial)
+
+	financialRoute := authRoute.Group("/financial")
+	financialRoute.Use(server.FinancialMiddleware())
+	financialRoute.GET("/:id", server.GetFinancialById)
+	financialRoute.PUT("/:id", server.UpdateFinancial)
+	financialRoute.DELETE("/:id", server.DeleteFinancial)
 
 	server.router = router
 }
