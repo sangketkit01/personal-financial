@@ -6,7 +6,19 @@ package db
 
 import (
 	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+type Budget struct {
+	ID        int32          `json:"id"`
+	UserID    string         `json:"user_id"`
+	Month     int32          `json:"month"`
+	Year      int32          `json:"year"`
+	Amount    pgtype.Numeric `json:"amount"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
+}
 
 type Financial struct {
 	ID        int64     `json:"id"`

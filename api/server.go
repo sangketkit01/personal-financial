@@ -58,5 +58,16 @@ func (server *Server) setupRoute(){
 	summaryRoute.GET("/type/month-year", server.SummaryTypeByMonthYear)
 	summaryRoute.GET("/type/year", server.SummaryTypeByYear)
 
+	budgetRoute := authRoute.Group("/budget")
+	budgetRoute.Use(server.authMiddleware(server.tokenMaker))
+	budgetRoute.POST("/", server.AddNewBudget)
+	budgetRoute.GET("/", server.GetCurrentBudget)
+	budgetRoute.PUT("/", server.UpdateBudget)
+
+	budgetRoute.GET("/check",server.CheckBudgetUsage)
+
+	budgetRoute.GET("/history", server.GetHistoryBudget)
+	budgetRoute.GET("/history/year", server.GetBudgetHistoryByYear)
+
 	server.router = router
 }

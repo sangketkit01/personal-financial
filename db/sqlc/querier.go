@@ -9,8 +9,12 @@ import (
 )
 
 type Querier interface {
+	AddNewBudget(ctx context.Context, arg AddNewBudgetParams) (Budget, error)
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	DeleteFinancial(ctx context.Context, id int64) (Financial, error)
+	GetBudget(ctx context.Context, arg GetBudgetParams) (Budget, error)
+	GetBudgetHistory(ctx context.Context, userID string) ([]Budget, error)
+	GetBudgetHistoryByYear(ctx context.Context, arg GetBudgetHistoryByYearParams) (Budget, error)
 	GetFinancialById(ctx context.Context, id int64) (GetFinancialByIdRow, error)
 	GetFinancialByName(ctx context.Context, type_ string) (FinancialType, error)
 	GetFinancialOwner(ctx context.Context, id int64) (string, error)
@@ -23,6 +27,7 @@ type Querier interface {
 	SummaryFinancialByMonth(ctx context.Context, arg SummaryFinancialByMonthParams) (SummaryFinancialByMonthRow, error)
 	SummaryFinancialByYear(ctx context.Context, arg SummaryFinancialByYearParams) (SummaryFinancialByYearRow, error)
 	SummaryFinancialEachYear(ctx context.Context, userID string) ([]SummaryFinancialEachYearRow, error)
+	UpdateBudget(ctx context.Context, arg UpdateBudgetParams) (Budget, error)
 	UpdateFinancial(ctx context.Context, arg UpdateFinancialParams) (Financial, error)
 	UpdatePassword(ctx context.Context, arg UpdatePasswordParams) error
 }

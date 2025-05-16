@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"time"
@@ -60,7 +61,7 @@ func (server *Server) MyFinancial(ctx *gin.Context) {
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, newErrorResponse("cannot get financial data."))
 		return
-	}else if len(myFinancial) == 0{
+	} else if len(myFinancial) == 0 {
 		ctx.JSON(http.StatusNotFound, newErrorResponse("no financial found."))
 		return
 	}
@@ -126,9 +127,55 @@ func (server *Server) AddNewFinancial(ctx *gin.Context) {
 		return
 	}
 
+	// after insert the new financial, check how much we've spent compared to our budget
+	usageMessage := "you have no budget now. Please visit /insert-budget to add your budget"
+
+	month := time.Now().Month()
+	year := time.Now().Year()
+
+	budget, err := server.store.GetBudget(ctx, db.GetBudgetParams{
+		UserID: user.Username,
+		Month:  int32(month),
+		Year:   int32(year),
+	})
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			fmt.Printf("user: %s have no budget\n", user.Username)
+		} else {
+			fmt.Printf("cannot get budget of the current user: %v", err)
+		}
+	} else {
+		var usage float32 = 1.0
+
+		currenMonthUsage, err := server.store.SummaryFinancialByMonth(ctx, db.SummaryFinancialByMonthParams{
+			UserID: user.Username,
+			Month:  int32(time.Now().Month()),
+			Year:   int32(time.Now().Year()),
+		})
+
+		if err != nil {
+			if err == pgx.ErrNoRows {
+				usage = 0.0
+			}
+		}
+
+		if budget.Amount.Int.Int64() == 0 {
+			usageMessage = "Your budget is set to 0. Please update it to track usage."
+		} else {
+			budgetFloat, _ := budget.Amount.Float64Value()
+			budgetAmount := float32(budgetFloat.Float64)
+			usage = float32(math.Abs(float64(currenMonthUsage.TotalExpense))) / budgetAmount
+
+			usagePercent := fmt.Sprintf("%.2f", usage*100.0)
+			usageMessage = fmt.Sprintf("You've used %s%% of the budget you've set", usagePercent)
+		}
+	}
+	// -----------------------------------------------------------------
+
 	ctx.JSON(http.StatusOK, gin.H{
 		"message":   "saved financial successfully.",
 		"financial": financial,
+		"usage":     usageMessage,
 	})
 }
 
@@ -402,7 +449,7 @@ func (server *Server) SummaryEachYear(ctx *gin.Context) {
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, newErrorResponse(err.Error()))
 		return
-	}else if len(summary) == 0{
+	} else if len(summary) == 0 {
 		ctx.JSON(http.StatusNotFound, newErrorResponse("no financial found."))
 		return
 	}
@@ -441,7 +488,7 @@ func (server *Server) SummaryTypeByMonthYear(ctx *gin.Context) {
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, newErrorResponse(err.Error()))
 		return
-	}else if len(summary) == 0{
+	} else if len(summary) == 0 {
 		ctx.JSON(http.StatusNotFound, newErrorResponse("you have no financial yet."))
 		return
 	}
@@ -478,7 +525,7 @@ func (server *Server) SummaryTypeByYear(ctx *gin.Context) {
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, newErrorResponse(err.Error()))
 		return
-	}else if len(summary) == 0{
+	} else if len(summary) == 0 {
 		ctx.JSON(http.StatusNotFound, newErrorResponse("you have no financial yet."))
 		return
 	}
