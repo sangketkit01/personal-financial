@@ -13,7 +13,16 @@ import (
 )
 
 func (server *Server) GetFinancialById(ctx *gin.Context) {
-	_ = ctx.MustGet("user").(db.User)
+	u, exists := ctx.Get("user")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, newErrorResponse("unauthorized"))
+		return
+	}
+	_, ok := u.(db.User)
+	if !ok {
+		ctx.JSON(http.StatusInternalServerError, newErrorResponse("invalid user type"))
+		return
+	}
 
 	financialId, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil || financialId <= 0 {
@@ -36,7 +45,16 @@ func (server *Server) GetFinancialById(ctx *gin.Context) {
 }
 
 func (server *Server) MyFinancial(ctx *gin.Context) {
-	user := ctx.MustGet("user").(db.User)
+	u, exists := ctx.Get("user")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, newErrorResponse("unauthorized"))
+		return
+	}
+	user, ok := u.(db.User)
+	if !ok {
+		ctx.JSON(http.StatusInternalServerError, newErrorResponse("invalid user type"))
+		return
+	}
 
 	myFinancial, err := server.store.MyFinancial(ctx, user.Username)
 	if err != nil {
@@ -56,7 +74,16 @@ type NewFinancialRequest struct {
 }
 
 func (server *Server) AddNewFinancial(ctx *gin.Context) {
-	user := ctx.MustGet("user").(db.User)
+	u, exists := ctx.Get("user")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, newErrorResponse("unauthorized"))
+		return
+	}
+	user, ok := u.(db.User)
+	if !ok {
+		ctx.JSON(http.StatusInternalServerError, newErrorResponse("invalid user type"))
+		return
+	}
 
 	var req NewFinancialRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -111,7 +138,16 @@ type UpdateFinancialRequest struct {
 }
 
 func (server *Server) UpdateFinancial(ctx *gin.Context) {
-	_ = ctx.MustGet("user").(db.User)
+	u, exists := ctx.Get("user")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, newErrorResponse("unauthorized"))
+		return
+	}
+	_, ok := u.(db.User)
+	if !ok {
+		ctx.JSON(http.StatusInternalServerError, newErrorResponse("invalid user type"))
+		return
+	}
 
 	financialId, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil || financialId <= 0 {
@@ -166,7 +202,16 @@ func (server *Server) UpdateFinancial(ctx *gin.Context) {
 }
 
 func (server *Server) DeleteFinancial(ctx *gin.Context) {
-	_ = ctx.MustGet("user").(db.User)
+	u, exists := ctx.Get("user")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, newErrorResponse("unauthorized"))
+		return
+	}
+	_, ok := u.(db.User)
+	if !ok {
+		ctx.JSON(http.StatusInternalServerError, newErrorResponse("invalid user type"))
+		return
+	}
 
 	financialId, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil || financialId <= 0 {
@@ -187,7 +232,16 @@ func (server *Server) DeleteFinancial(ctx *gin.Context) {
 }
 
 func (server *Server) SummaryCurrentMonth(ctx *gin.Context) {
-	user := ctx.MustGet("user").(db.User)
+	u, exists := ctx.Get("user")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, newErrorResponse("unauthorized"))
+		return
+	}
+	user, ok := u.(db.User)
+	if !ok {
+		ctx.JSON(http.StatusInternalServerError, newErrorResponse("invalid user type"))
+		return
+	}
 
 	arg := db.SummaryFinancialByMonthParams{
 		UserID: user.Username,
@@ -210,7 +264,16 @@ func (server *Server) SummaryCurrentMonth(ctx *gin.Context) {
 }
 
 func (server *Server) SummaryCurrentYear(ctx *gin.Context) {
-	user := ctx.MustGet("user").(db.User)
+	u, exists := ctx.Get("user")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, newErrorResponse("unauthorized"))
+		return
+	}
+	user, ok := u.(db.User)
+	if !ok {
+		ctx.JSON(http.StatusInternalServerError, newErrorResponse("invalid user type"))
+		return
+	}
 
 	arg := db.SummaryFinancialByYearParams{
 		UserID: user.Username,
@@ -241,8 +304,16 @@ type YearRequest struct {
 }
 
 func (server *Server) SummaryByMonthYear(ctx *gin.Context) {
-	user := ctx.MustGet("user").(db.User)
-
+	u, exists := ctx.Get("user")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, newErrorResponse("unauthorized"))
+		return
+	}
+	user, ok := u.(db.User)
+	if !ok {
+		ctx.JSON(http.StatusInternalServerError, newErrorResponse("invalid user type"))
+		return
+	}
 	var req YearMonthRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, newErrorResponse("invalid request body."))
@@ -274,7 +345,16 @@ func (server *Server) SummaryByMonthYear(ctx *gin.Context) {
 }
 
 func (server *Server) SummaryByYear(ctx *gin.Context) {
-	user := ctx.MustGet("user").(db.User)
+	u, exists := ctx.Get("user")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, newErrorResponse("unauthorized"))
+		return
+	}
+	user, ok := u.(db.User)
+	if !ok {
+		ctx.JSON(http.StatusInternalServerError, newErrorResponse("invalid user type"))
+		return
+	}
 
 	var req YearRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -306,7 +386,16 @@ func (server *Server) SummaryByYear(ctx *gin.Context) {
 }
 
 func (server *Server) SummaryEachYear(ctx *gin.Context) {
-	user := ctx.MustGet("user").(db.User)
+	u, exists := ctx.Get("user")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, newErrorResponse("unauthorized"))
+		return
+	}
+	user, ok := u.(db.User)
+	if !ok {
+		ctx.JSON(http.StatusInternalServerError, newErrorResponse("invalid user type"))
+		return
+	}
 
 	summary, err := server.store.SummaryFinancialEachYear(ctx, user.Username)
 
@@ -322,7 +411,16 @@ func (server *Server) SummaryEachYear(ctx *gin.Context) {
 }
 
 func (server *Server) SummaryTypeByMonthYear(ctx *gin.Context) {
-	user := ctx.MustGet("user").(db.User)
+	u, exists := ctx.Get("user")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, newErrorResponse("unauthorized"))
+		return
+	}
+	user, ok := u.(db.User)
+	if !ok {
+		ctx.JSON(http.StatusInternalServerError, newErrorResponse("invalid user type"))
+		return
+	}
 
 	var req YearMonthRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -352,7 +450,16 @@ func (server *Server) SummaryTypeByMonthYear(ctx *gin.Context) {
 }
 
 func (server *Server) SummaryTypeByYear(ctx *gin.Context) {
-	user := ctx.MustGet("user").(db.User)
+	u, exists := ctx.Get("user")
+	if !exists {
+		ctx.JSON(http.StatusUnauthorized, newErrorResponse("unauthorized"))
+		return
+	}
+	user, ok := u.(db.User)
+	if !ok {
+		ctx.JSON(http.StatusInternalServerError, newErrorResponse("invalid user type"))
+		return
+	}
 
 	var req YearRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {

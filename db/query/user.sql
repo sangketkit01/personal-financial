@@ -12,3 +12,8 @@ FROM users where username = $1;
 -- name: GetUser :one
 SELECT *
 FROM users where username = $1;
+
+-- name: UpdatePassword :exec
+UPDATE users
+SET password = $1
+WHERE username = $2;

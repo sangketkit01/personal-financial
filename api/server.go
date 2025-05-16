@@ -35,6 +35,8 @@ func (server *Server) setupRoute(){
 
 	authRoute := router.Group("/")
 	authRoute.Use(server.authMiddleware(server.tokenMaker))
+	authRoute.PUT("/update-password", server.UpdateUserPassword)
+
 	authRoute.POST("/new-financial", server.AddNewFinancial)
 	authRoute.GET("/my-financial", server.MyFinancial)
 

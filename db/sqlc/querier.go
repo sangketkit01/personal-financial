@@ -24,6 +24,7 @@ type Querier interface {
 	SummaryFinancialByYear(ctx context.Context, arg SummaryFinancialByYearParams) (SummaryFinancialByYearRow, error)
 	SummaryFinancialEachYear(ctx context.Context, userID string) ([]SummaryFinancialEachYearRow, error)
 	UpdateFinancial(ctx context.Context, arg UpdateFinancialParams) (Financial, error)
+	UpdatePassword(ctx context.Context, arg UpdatePasswordParams) error
 }
 
 var _ Querier = (*Queries)(nil)
