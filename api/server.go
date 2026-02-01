@@ -1,6 +1,8 @@
 package api
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	db "github.com/sangketkit01/personal-financial/db/sqlc"
 	"github.com/sangketkit01/personal-financial/token"
@@ -29,6 +31,10 @@ func NewServer(config util.Config, store db.Store, tokenMaker token.Maker) (*Ser
 
 func (server *Server) setupRoute(){
 	router := gin.Default()
+
+	router.GET("/", func(ctx *gin.Context) {
+		ctx.JSON(http.StatusOK,gin.H{"message": "Welcome to Personal Financial Management System!"})
+	})
 
 	router.POST("/create-user",server.createUser)
 	router.POST("/login-user",server.LoginUser)

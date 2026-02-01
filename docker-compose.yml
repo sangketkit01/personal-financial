@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  postgres_financial:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: personal_financial
+    ports:
+      - "5433:5432"
+    volumes:  
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U root -d personal_financial"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+
+  migrate:
+    image: migrate/migrate
+    depends_on:
+      postgres_financial:
+        condition: service_healthy
+    volumes:
+      - ./db/migration:/migrations
+    entrypoint: [ "migrate", 
+                  "-path", "/migrations", 
+                  "-database", "postgresql://root:secret@postgres_financial:5432/personal_financial?sslmode=disable", 
+                  "up" ]
+    restart: on-failure
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      postgres_financial:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    ports:
+      - "8088:5315"
+    environment:
+      - DB_SOURCE=postgresql://root:secret@postgres_financial:5432/personal_financial?sslmode=disable
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
